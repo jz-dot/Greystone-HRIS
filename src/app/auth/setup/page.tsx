@@ -46,47 +46,19 @@ export default function SetupPage() {
       return;
     }
 
-    const { data: emp, error: empError } = await supabase
-      .from('employees')
-      .insert({
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        job_title: 'HR Administrator',
-        department: 'Human Resources',
-        employment_type: 'full_time',
-      })
-      .select()
-      .single();
+    // Use security definer function to bypass RLS for initial setup
+    const { error: setupError } = await supabase.rpc('perform_initial_setup', {
+      p_user_id: authData.user.id,
+      p_first_name: firstName,
+      p_last_name: lastName,
+      p_email: email,
+      p_company_name: companyName || null,
+    });
 
-    if (empError || !emp) {
-      setError('Failed to create employee record.');
+    if (setupError) {
+      setError(setupError.message || 'Failed to complete setup.');
       setLoading(false);
       return;
-    }
-
-    await supabase
-      .from('profiles')
-      .update({
-        role: 'admin',
-        employee_id: emp.id,
-        last_login_at: new Date().toISOString(),
-      })
-      .eq('id', authData.user.id);
-
-    if (companyName) {
-      const { data: settings } = await supabase
-        .from('company_settings')
-        .select('id')
-        .limit(1)
-        .single();
-
-      if (settings) {
-        await supabase
-          .from('company_settings')
-          .update({ company_name: companyName })
-          .eq('id', settings.id);
-      }
     }
 
     router.push('/');

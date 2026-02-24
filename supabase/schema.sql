@@ -323,5 +323,53 @@ create trigger company_settings_updated_at
   before update on company_settings
   for each row execute procedure update_updated_at();
 
+-- =====================================================
+-- INITIAL ADMIN SETUP (bypasses RLS for first-time setup)
+-- =====================================================
+
+create or replace function public.perform_initial_setup(
+  p_user_id uuid,
+  p_first_name text,
+  p_last_name text,
+  p_email text,
+  p_company_name text default null
+)
+returns json as $$
+declare
+  v_admin_exists boolean;
+  v_employee_id uuid;
+begin
+  -- Only allow if no admin exists yet (prevents misuse)
+  select exists(
+    select 1 from profiles where role = 'admin'
+  ) into v_admin_exists;
+
+  if v_admin_exists then
+    raise exception 'An admin account already exists. Use the invitation system to add users.';
+  end if;
+
+  -- Create employee record
+  insert into employees (first_name, last_name, email, job_title, department, employment_type)
+  values (p_first_name, p_last_name, p_email, 'HR Administrator', 'Human Resources', 'full_time')
+  returning id into v_employee_id;
+
+  -- Update profile to admin
+  update profiles
+  set role = 'admin',
+      employee_id = v_employee_id,
+      last_login_at = now()
+  where id = p_user_id;
+
+  -- Update company name if provided
+  if p_company_name is not null and p_company_name != '' then
+    update company_settings
+    set company_name = p_company_name
+    where id = (select id from company_settings limit 1);
+  end if;
+
+  return json_build_object('employee_id', v_employee_id);
+end;
+$$ language plpgsql security definer;
+
 -- Insert default company settings row
 insert into company_settings (company_name) values ('My Company');
