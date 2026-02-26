@@ -10,6 +10,8 @@ import {
   CheckSquare,
   UserPlus,
   Building2,
+  Settings,
+  ClipboardList,
   LogOut,
   Menu,
   X,
@@ -38,9 +40,10 @@ const navItems: NavItem[] = [
   { label: 'My Time Off', href: '/leave', icon: CalendarDays, roles: ['admin', 'manager', 'employee'] },
   { label: 'Approvals', href: '/leave/approvals', icon: CheckSquare, roles: ['admin', 'manager'] },
   { label: 'Employees', href: '/employees', icon: Users, roles: ['admin', 'manager'] },
+  { label: 'Onboarding', href: '/onboarding', icon: ClipboardList, roles: ['admin', 'manager'] },
   { label: 'My Profile', href: '/profile', icon: Users, roles: ['employee'] },
   { label: 'Invite Users', href: '/admin/invitations', icon: UserPlus, roles: ['admin'] },
-  { label: 'Company Settings', href: '/admin/settings', icon: Building2, roles: ['admin'] },
+  { label: 'Settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
 ];
 
 export function Sidebar({ role, userName, onLogout }: SidebarProps) {
